@@ -3,9 +3,9 @@ package gui.controller;
 import gui.MainFrame;
 import model.robot.MobileRobot;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
+import javax.swing.*;
 
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -21,7 +21,7 @@ import java.awt.event.KeyListener;
  * @version 2.0
  */
 
-public class SimulationController extends JMenu implements ActionListener, KeyListener {
+public class SimulationController extends JMenu implements ActionListener {
 
 	private final JMenuItem menuSimulationStartPause;
 	private final JMenuItem menuSimulationReset;
@@ -38,11 +38,15 @@ public class SimulationController extends JMenu implements ActionListener, KeyLi
 
 		// Menu Simulation Start
 		this.menuSimulationStartPause = new JMenuItem("Start");
+		KeyStroke playPauseKeystroke = KeyStroke.getKeyStroke(KeyEvent.VK_P, 0);
+		this.menuSimulationStartPause.setAccelerator(playPauseKeystroke);
 		this.menuSimulationStartPause.addActionListener(this);
 
 
 		// Menu Simulation Reset
 		this.menuSimulationReset = new JMenuItem("Reset");
+		KeyStroke resetKeystroke = KeyStroke.getKeyStroke(KeyEvent.VK_R, KeyEvent.CTRL_DOWN_MASK);
+		this.menuSimulationReset.setAccelerator(resetKeystroke);
 		this.menuSimulationReset.addActionListener(this);
 
 		// Menu
@@ -81,23 +85,5 @@ public class SimulationController extends JMenu implements ActionListener, KeyLi
 				this.main.init();
 			}
 		}
-	}
-
-	@Override
-	public void keyTyped(KeyEvent e) {
-		System.out.println("Typed");
-	}
-
-	@Override
-	public void keyPressed(KeyEvent e) {
-		System.out.println("Keyevent");
-		if (e.getKeyChar() == 'p') {
-			playPause();
-		}
-	}
-
-	@Override
-	public void keyReleased(KeyEvent e) {
-		System.out.println("released");
 	}
 }
