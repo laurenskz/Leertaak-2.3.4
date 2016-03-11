@@ -42,7 +42,7 @@ public class DelayController extends JMenu implements ActionListener {
 		super("Delay");
 
 		this.environment = environment;
-		this.delay = 10;
+		this.delay = MobileRobot.BASE_DELAY;
 
 		JPanel pnlDelay = new JPanel();
 		pnlDelay.setLayout(new GridBagLayout());
@@ -121,7 +121,7 @@ public class DelayController extends JMenu implements ActionListener {
 			try {
 				this.delay = Integer.parseInt(txtDelay.getText());
 			} catch (Exception exception) {
-				this.delay = 10;
+				this.delay = MobileRobot.BASE_DELAY;
 			}
 
 		} else if (e.getSource() == btnIncrease) {

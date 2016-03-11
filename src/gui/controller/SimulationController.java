@@ -8,6 +8,8 @@ import javax.swing.JMenuItem;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 /**
  * Title    :   The Mobile Robot Explorer Simulation Environment v2.0
@@ -19,7 +21,7 @@ import java.awt.event.ActionListener;
  * @version 2.0
  */
 
-public class SimulationController extends JMenu implements ActionListener {
+public class SimulationController extends JMenu implements ActionListener, KeyListener {
 
 	private final JMenuItem menuSimulationStartPause;
 	private final JMenuItem menuSimulationReset;
@@ -40,7 +42,7 @@ public class SimulationController extends JMenu implements ActionListener {
 
 
 		// Menu Simulation Reset
-		this.menuSimulationReset = new JMenuItem("reset");
+		this.menuSimulationReset = new JMenuItem("Reset");
 		this.menuSimulationReset.addActionListener(this);
 
 		// Menu
@@ -48,6 +50,18 @@ public class SimulationController extends JMenu implements ActionListener {
 		this.add(menuSimulationReset);
 
 	}
+
+	private void playPause() {
+
+		if (this.menuSimulationStartPause.getText().equals("Start")) {
+			this.robot.start();
+			this.menuSimulationStartPause.setText("Pause");
+		} else {
+			this.robot.quit();
+			this.menuSimulationStartPause.setText("Start");
+		}
+	}
+
 
 
 	/**
@@ -57,14 +71,7 @@ public class SimulationController extends JMenu implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		if (e.getSource().equals(this.menuSimulationStartPause)) {
-			if (this.menuSimulationStartPause.getText().equals("Start")) {
-				this.robot.start();
-				this.menuSimulationStartPause.setText("Pause");
-			} else {
-				this.robot.quit();
-				this.menuSimulationStartPause.setText("Start");
-			}
-
+			playPause();
 		} else if (e.getSource().equals(this.menuSimulationReset)) {
 			if (this.menuSimulationStartPause.getText().equals("Pause")) {
 				this.robot.quit();
@@ -73,7 +80,24 @@ public class SimulationController extends JMenu implements ActionListener {
 			} else {
 				this.main.init();
 			}
-
 		}
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		System.out.println("Typed");
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		System.out.println("Keyevent");
+		if (e.getKeyChar() == 'p') {
+			playPause();
+		}
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		System.out.println("released");
 	}
 }

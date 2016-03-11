@@ -26,6 +26,8 @@ import model.virtualmap.OccupancyMap;
 import javax.swing.*;
 
 import java.awt.*;
+import java.awt.event.KeyListener;
+import java.io.File;
 
 
 /**
@@ -34,6 +36,7 @@ import java.awt.*;
  */
 
 public class MainFrame extends JFrame {
+
 	/**
 	 * Constructor of mainframe
 	 */
@@ -63,6 +66,11 @@ public class MainFrame extends JFrame {
 //  Controllers:
 		// menus
 		SimulationController occupancyMenu = new SimulationController(environment.getRobot(), this);
+
+		Component[] components = getComponents();
+
+
+
 		OccupancyMapController simulationMenu = new OccupancyMapController(environment);
 		DelayController settingsMenu = new DelayController(environment);
 		// menubar
@@ -81,12 +89,13 @@ public class MainFrame extends JFrame {
 		simulationView.validate();
 
 		// occupancyMapView
-
 		OccupancyMapView mapView = new OccupancyMapView(map);
 		mapView.validate();
 
 		map.addActionListener(mapView);
 		environment.addActionListener(simulationView);
+
+		environment.loadMap(new File("maps/map.xml"));
 
 		JTabbedPane left = new JTabbedPane();
 		left.add(mapView, "Map view");
@@ -110,6 +119,16 @@ public class MainFrame extends JFrame {
 		this.setTitle("Mobile Robot Explorer V2.0 ~ by Dustin Meijer & Alexander Jeurissen (2012), based on Davide Brugali (2002)");
 		this.setVisible(true);
 
+	}
+
+	private void setKeyListeners(KeyListener keyListener, Component[] components) {
+		for (Component component : components) {
+			if (component instanceof JPanel) {
+				setKeyListeners(keyListener, ((JPanel) component).getComponents());
+			} else {
+				component.addKeyListener(keyListener);
+			}
+		}
 	}
 
 	/**

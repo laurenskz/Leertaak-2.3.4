@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 public class MobileRobot {
 
+	public static final int BASE_DELAY = 5;
+
     public static int delay;
 
     private final String name;
@@ -48,7 +50,7 @@ public class MobileRobot {
 		this.position = new Position(x, y, Math.toRadians(t));
 		this.platform = new Platform("P1", this, environment);
 		this.sensors.add(new Laser("L1", this, new Position(20.0, 0.0, 0.0), environment));
-		delay = 50;
+		delay = BASE_DELAY;
 
 		this.intelligence = new MobileRobotAI(this,map);
 

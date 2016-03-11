@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.io.PipedOutputStream;
 import java.io.IOException;
 
+import java.util.Arrays;
 import java.util.StringTokenizer;
 
 /**
@@ -225,6 +226,7 @@ public class MobileRobotAI implements Runnable {
 		for (int i = 0; i < 360; i++) {
 			measures[i] = 100.0;
 		}
+
 		if (value.length() >= 5) {
 			value = value.substring(5);  // removes the "SCAN " keyword
 
