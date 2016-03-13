@@ -28,13 +28,13 @@ public class MobileRobotAI implements Runnable {
 
     private final OccupancyMap map;
     private final MobileRobot robot;
+    private double robotX,robotY,robotWidth,robotHeight;
 
     private boolean running;
 
     public MobileRobotAI(MobileRobot robot, OccupancyMap map) {
         this.map = map;
         this.robot = robot;
-
     }
 
     /**
@@ -59,12 +59,12 @@ public class MobileRobotAI implements Runnable {
 
 //      ases where a variable value is never used after its assignment, i.e.:
                 System.out.println("intelligence running");
-                while(get()){
-                    getPosition(position,input);
-                    scan(position,measures,input);
-                    moveTo(getWallBlockToFollow(),position,input);
-                    System.out.println(position);
-                }
+                robotX = robot.getPlatform().getShape().getBounds().getX();
+                robotY = robot.getPlatform().getShape().getBounds().getY();
+                robotHeight = robot.getPlatform().getShape().getBounds().getHeight();
+                robotWidth = robot.getPlatform().getShape().getBounds().getWidth();
+                
+
                 this.running = false;
             } catch (IOException ioe) {
                 System.err.println("execution stopped");
@@ -89,28 +89,25 @@ public class MobileRobotAI implements Runnable {
         }
     }
 
-    private  void moveTo(int[] position, double[] currentPosition, BufferedReader input){
+    private  void moveTo(double[] position, double[] currentPosition, BufferedReader input){
         try {
             getPosition(currentPosition,input);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        map.setFollowed(position[0],position[1]);
-        int[] currentPositionInGrid = map.gridPoint(currentPosition);
-        int dX = position[0] - currentPositionInGrid[0];//Aanliggende zijde
-        int dY = position[1] - currentPositionInGrid[1];//Overstaande zijde
+        double dX = position[0] - currentPosition[0];//Aanliggende zijde
+        double dY = position[1] - currentPosition[1];//Overstaande zijde
         double degrees = getDegrees(dX, dY);
         moveRobot(currentPosition, input, dX, dY, degrees);
     }
 
-    private void moveRobot(double[] currentPosition, BufferedReader input, int dX, int dY, double degrees) {
+    private void moveRobot(double[] currentPosition, BufferedReader input, double dX, double dY, double degrees) {
         rotateTo(degrees,input,currentPosition);
         int distance = (int)Math.sqrt(dX*dX+dY*dY);
-        distance*=map.getCellDimension();
         move(input,distance);
     }
 
-    private static double getDegrees(int dX, double dY) {
+    private static double getDegrees(double dX, double dY) {
         double tan = dY /dX;
         double radians = Math.atan(tan);
         double degrees = Math.toDegrees(radians);
@@ -125,7 +122,10 @@ public class MobileRobotAI implements Runnable {
         for (int i = 0; i < map.getGrid().length; i++) {
             for (int j = 0; j < map.getGrid()[i].length; j++) {
                 if(map.getGrid()[i][j]==map.getObstacle()){
-                    if(!map.isFollowed(i,j))return new int[]{i,j};
+                    if(!map.isFollowed(i,j)){
+
+                        return new int[]{i,j};
+                    }
                 }
             }
         }
@@ -135,6 +135,8 @@ public class MobileRobotAI implements Runnable {
     private int[][] squaresOnRoute(int[] position, double[] currentPosition, BufferedReader input) {
         return null;
     }
+
+
 
     private boolean get(){
         return true;
