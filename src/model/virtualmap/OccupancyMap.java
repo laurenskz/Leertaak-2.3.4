@@ -30,6 +30,7 @@ public class OccupancyMap {
 	private final int MAP_HEIGHT = 460;
 
 	private final char[][] grid;
+	private final boolean[][] followed;
 
 	private final ArrayList<ActionListener> actionListenerList;
 	private Environment environment;
@@ -37,6 +38,7 @@ public class OccupancyMap {
 
 	public OccupancyMap() {
 		this.grid = new char[MAP_WIDTH / CELL_DIMENSION][MAP_HEIGHT / CELL_DIMENSION];
+		this.followed = new boolean[grid.length][grid[0].length];
 
 		for (int i = 0; i < MAP_WIDTH / CELL_DIMENSION; i++) {
 			for (int j = 0; j < MAP_HEIGHT / CELL_DIMENSION; j++) {
@@ -105,6 +107,19 @@ public class OccupancyMap {
 		}
 	}
 
+	public void setFollowed(int x,int y){
+		if(x<0||x>=followed[0].length)return;
+		if(y<0||y>=followed.length)return;
+		followed[x][y] = true;
+	}
+
+	public boolean isFollowed(int x, int y){
+		if(x<0||x>=followed[0].length)return false;
+		if(y<0||y>=followed.length)return false;
+		return followed[x][y];
+
+	}
+
 	/**
 	 * This method is intended to notify all ActionListeners of a event.
 	 *
@@ -131,6 +146,12 @@ public class OccupancyMap {
 
 	public char[][] getGrid() {
 		return grid;
+	}
+
+	public int[] gridPoint(double[] position){
+		int x = (int)position[0]/CELL_DIMENSION;
+		int y = (int)position[1]/CELL_DIMENSION;
+		return new int[]{x,y};
 	}
 
 	public char getUnknown() {
