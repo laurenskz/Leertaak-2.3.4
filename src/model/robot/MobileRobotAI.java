@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.io.PipedOutputStream;
 import java.io.IOException;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.StringTokenizer;
@@ -61,10 +62,12 @@ public class MobileRobotAI implements Runnable {
                 System.out.println("intelligence running");
                 robotX = robot.getPlatform().getShape().getBounds().getX();
                 robotY = robot.getPlatform().getShape().getBounds().getY();
-                robotHeight = robot.getPlatform().getShape().getBounds().getHeight();
-                robotWidth = robot.getPlatform().getShape().getBounds().getWidth();
-                
-
+                robotHeight = robot.getPlatform().getShape().getBounds().height;
+                robotWidth = robot.getPlatform().getShape().getBounds().width;
+                for (int i = 0; i < 360; i++) {
+                    getPosition(position,input);
+                    rotateLeft(input,1);
+                }
                 this.running = false;
             } catch (IOException ioe) {
                 System.err.println("execution stopped");
@@ -72,6 +75,24 @@ public class MobileRobotAI implements Runnable {
             }
         }
 
+    }
+
+    private double[][] leftAndRightFront(double[] position,BufferedReader input){
+        try {
+            getPosition(position,input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        double vx = robotWidth+robotY;
+        double vy = robotHeight/2;
+        double[] leftFront = new double[2];
+        double degrees = Math.toRadians(360d-position[2]);
+        leftFront[0] = position[0] + vx*Math.cos(degrees)-vy*Math.sin(degrees);
+        leftFront[1] = position[1] - vx*Math.sin(degrees)-vy*Math.cos(degrees);
+        double[] rightFront = new double[2];
+        rightFront[0] = leftFront[0] + (2*vy)*Math.sin(degrees);
+        rightFront[1] = leftFront[1] + (2*vy)*Math.cos(degrees);
+        return new double[][]{leftFront,rightFront};
     }
 
     private void rotateTo(double degrees,BufferedReader input,double[] position){
