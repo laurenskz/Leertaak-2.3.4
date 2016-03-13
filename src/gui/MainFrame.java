@@ -56,19 +56,15 @@ public class MainFrame extends JFrame {
 		}
 
 
-//	Models:
+		//	Models:
 		//OccupancyMap
-
 		OccupancyMap map = new OccupancyMap();
 		Environment environment = new Environment(map);
 		map.setEnvironment(environment);
 
-//  Controllers:
+		//  Controllers:
 		// menus
 		SimulationController occupancyMenu = new SimulationController(environment.getRobot(), this);
-
-		Component[] components = getComponents();
-
 
 
 		OccupancyMapController simulationMenu = new OccupancyMapController(environment);
@@ -83,7 +79,7 @@ public class MainFrame extends JFrame {
 		);
 
 
-//	Views:
+		//	Views:
 		// simulationView
 		SimulationView simulationView = new SimulationView(environment);
 		simulationView.validate();
@@ -119,16 +115,6 @@ public class MainFrame extends JFrame {
 		this.setTitle("Mobile Robot Explorer V2.0 ~ by Dustin Meijer & Alexander Jeurissen (2012), based on Davide Brugali (2002)");
 		this.setVisible(true);
 
-	}
-
-	private void setKeyListeners(KeyListener keyListener, Component[] components) {
-		for (Component component : components) {
-			if (component instanceof JPanel) {
-				setKeyListeners(keyListener, ((JPanel) component).getComponents());
-			} else {
-				component.addKeyListener(keyListener);
-			}
-		}
 	}
 
 	/**

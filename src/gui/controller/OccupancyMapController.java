@@ -2,13 +2,12 @@ package gui.controller;
 
 import model.environment.Environment;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 
 
@@ -43,10 +42,14 @@ public class OccupancyMapController extends JMenu implements ActionListener {
 
 		// Menu File Open Map
 		this.menuFileOpenMap = new JMenuItem("Open Map");
+		KeyStroke openMapKeystroke = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
+		this.menuFileOpenMap.setAccelerator(openMapKeystroke);
         this.menuFileOpenMap.addActionListener(this);
 
 		// Menu File Exit
         this.menuFileExit = new JMenuItem("Exit");
+		KeyStroke exitKeystroke = KeyStroke.getKeyStroke(KeyEvent.VK_W, KeyEvent.CTRL_DOWN_MASK);
+		this.menuFileExit.setAccelerator(exitKeystroke);
         this.menuFileExit.addActionListener(this);
 
 		// Adds the menu components
