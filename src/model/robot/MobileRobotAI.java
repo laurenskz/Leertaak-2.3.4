@@ -10,9 +10,7 @@ import java.io.PipedOutputStream;
 import java.io.IOException;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 
 /**
  * Title    :   The Mobile Robot Explorer Simulation Environment v2.0
@@ -64,10 +62,15 @@ public class MobileRobotAI implements Runnable {
                 robotY = robot.getPlatform().getShape().getBounds().getY();
                 robotHeight = robot.getPlatform().getShape().getBounds().height;
                 robotWidth = robot.getPlatform().getShape().getBounds().width;
-                for (int i = 0; i < 360; i++) {
-                    getPosition(position,input);
-                    rotateLeft(input,1);
-                }
+//                double xStart = 200,yStart = 200, xDest = 400,yDest = 400;
+//                Set<int[]>visited = pointsBetween(xStart,yStart,xDest,yDest,xStart+90,yStart+30,xDest+90,yDest+30);
+                getPosition(position,input);
+                rotateTo(45d,input,position);
+                getPosition(position,input);
+                scan(position,measures,input);
+                System.out.println(safeMove(position,200));
+//                moveTo(new double[]{200d,200d,},position,input);
+//                moveTo(new double[]{400d,400d,},position,input);
                 this.running = false;
             } catch (IOException ioe) {
                 System.err.println("execution stopped");
@@ -77,29 +80,82 @@ public class MobileRobotAI implements Runnable {
 
     }
 
-    private double[][] leftAndRightFront(double[] position,BufferedReader input){
-        try {
-            getPosition(position,input);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private boolean safeMove(double[] position, int distance){
+        Set<int[]> pointsOnRoute = pointsBetween(position,distance);
+        for (int[] ints : pointsOnRoute) {
+            if(map.getGrid()[ints[0]][ints[1]]!=map.getEmpty()&&map.getGrid()[ints[0]][ints[1]]!=map.getRobot()){
+                System.out.println(map.getGrid()[ints[0]][ints[1]]);
+                System.out.println(Arrays.toString(ints));
+                return false;
+            }
         }
+        return true;
+    }
+
+    private Set<int[]> pointsBetween(double[] position, int distance){
+        double[][] startBounds = getRobotBounds(position);
+        double[] endPosition = new double[3];
+        double degrees = Math.toRadians(position[2]);
+        double dx = Math.cos(degrees)*distance;
+        double dy = Math.sin(degrees)*distance;
+        endPosition[0] = position[0]+dx;
+        endPosition[1] = position[1]+dy;
+        endPosition[2] = position[2];
+        double[][] endBounds = getRobotBounds(endPosition);
+        return pointsBetween(startBounds[2][0],startBounds[2][1],endBounds[0][0],endBounds[0][1],startBounds[3][0],startBounds[3][1],endBounds[1][0],endBounds[1][1]);
+    }
+
+    private Set<int[]> pointsBetween(double x00,double y00,double x01,double y01,double x10,double y10,double x11,double y11){
+        Set<int[]> visitedPoints = raytrace(x00,y00,x01,y01,map);
+        visitedPoints.addAll(raytrace(x00,y00,x10,y10,map));
+        visitedPoints.addAll(raytrace(x01,y01,x11,y11,map));
+        visitedPoints.addAll(raytrace(x10,y10,x11,y11,map));
+        int ySize = map.getMapHeight()/map.getCellDimension();
+        int[][] xValues = new int[ySize][2];
+        for (int[] xValue : xValues) {
+            for (int i = 0; i < xValue.length; i++) {
+                xValue[i]=-1;
+            }
+        }
+        for (int[] point : visitedPoints) {
+            if(point[1]<0||point[1]>=xValues.length)continue;
+            if(point[0]==-1)continue;
+            if(xValues[point[1]][0]==-1)xValues[point[1]][0] = point[0];
+            if(xValues[point[1]][0]>point[0])xValues[point[1]][0] = point[0];
+            if(xValues[point[1]][1]<point[0])xValues[point[1]][1] = point[0];
+        }
+        for (int i = 0; i < xValues.length; i++) {
+            int[] xMinAndMax = xValues[i];
+            for (int j = xMinAndMax[0]; j < xMinAndMax[1]; j++) {
+                visitedPoints.add(new int[]{j,i});
+            }
+        }
+        return visitedPoints;
+    }
+    private double[][] getRobotBounds(double[] position){
         double vx = robotWidth+robotY;
         double vy = robotHeight/2;
-        double[] leftFront = new double[2];
         double degrees = Math.toRadians(360d-position[2]);
+        double[] leftFront = new double[2];
         leftFront[0] = position[0] + vx*Math.cos(degrees)-vy*Math.sin(degrees);
         leftFront[1] = position[1] - vx*Math.sin(degrees)-vy*Math.cos(degrees);
         double[] rightFront = new double[2];
         rightFront[0] = leftFront[0] + (2*vy)*Math.sin(degrees);
         rightFront[1] = leftFront[1] + (2*vy)*Math.cos(degrees);
-        return new double[][]{leftFront,rightFront};
+        double[] leftBack = new double[2];
+        leftBack[0] = leftFront[0] - robotWidth*Math.cos(degrees);
+        leftBack[1] = leftFront[1] + robotWidth*Math.sin(degrees);
+        double[] rightBack = new double[2];
+        rightBack[0] = leftBack[0] + (2*vy)*Math.sin(degrees);
+        rightBack[1] = leftBack[1] + (2*vy)*Math.cos(degrees);
+        return new double[][]{leftFront,rightFront,leftBack,rightBack};
     }
 
     private void rotateTo(double degrees,BufferedReader input,double[] position){
         try{
+            getPosition(position,input);
             double toMove = degrees - position[2];
             int degreesAsInt = (int) Math.round(toMove);
-            getPosition(position,input);
             if(degreesAsInt<0){
                 rotateLeft(input,-degreesAsInt);
             }else if(degreesAsInt>0){
@@ -152,11 +208,6 @@ public class MobileRobotAI implements Runnable {
         }
         return null;
     }
-
-    private int[][] squaresOnRoute(int[] position, double[] currentPosition, BufferedReader input) {
-        return null;
-    }
-
 
 
     private boolean get(){
@@ -256,23 +307,102 @@ public class MobileRobotAI implements Runnable {
     }
 
     public static void main(String[] args) {
-        int[][] deltas = new int[][]{
-                new int[]{-1,-1},
-                new int[]{-2,-1},
-                new int[]{-1,0},
-                new int[]{-1,1},
-                new int[]{-1,2},
-                new int[]{0,1},
-                new int[]{1,1},
-                new int[]{2,1},
-                new int[]{1,0},
-                new int[]{2,-1},
-                new int[]{1,-1},
-                new int[]{0,-1},
-        };
-        for (int i = 0; i < deltas.length; i++) {
-            System.out.printf("dX = %d dY = %d\n",deltas[i][0],deltas[i][1]);
-            System.out.printf("degrees = %f\n",getDegrees(deltas[i][0],deltas[i][1]));
+//        int[][] deltas = new int[][]{
+//                new int[]{-1,-1},
+//                new int[]{-2,-1},
+//                new int[]{-1,0},
+//                new int[]{-1,1},
+//                new int[]{-1,2},
+//                new int[]{0,1},
+//                new int[]{1,1},
+//                new int[]{2,1},
+//                new int[]{1,0},
+//                new int[]{2,-1},
+//                new int[]{1,-1},
+//                new int[]{0,-1},
+//        };
+//        for (int i = 0; i < deltas.length; i++) {
+//            System.out.printf("dX = %d dY = %d\n",deltas[i][0],deltas[i][1]);
+//            System.out.printf("degrees = %f\n",getDegrees(deltas[i][0],deltas[i][1]));
+//        }
+
+    }
+
+    private static  Set<int[]> raytrace(double x0, double y0, double x1, double y1, OccupancyMap map)
+    {
+        x0/=map.getCellDimension();
+        x1/=map.getCellDimension();
+        y0/=map.getCellDimension();
+        y1/=map.getCellDimension();
+        Set<int[]> visitedPoints = new HashSet<>();
+        double dx = Math.abs(x1 - x0);
+        double dy = Math.abs(y1 - y0);
+
+        int x = (int)(Math.floor(x0));
+        int y = (int)(Math.floor(y0));
+
+        double dt_dx = 1.0 / dx;
+        double dt_dy = 1.0 / dy;
+
+        double t = 0;
+
+        int n = 1;
+        int x_inc, y_inc;
+        double t_next_vertical, t_next_horizontal;
+
+        if (dx == 0)
+        {
+            x_inc = 0;
+            t_next_horizontal = dt_dx; // infinity
         }
+        else if (x1 > x0)
+        {
+            x_inc = 1;
+            n += (int)(Math.floor(x1)) - x;
+            t_next_horizontal = (Math.floor(x0) + 1 - x0) * dt_dx;
+        }
+        else
+        {
+            x_inc = -1;
+            n += x - (int)(Math.floor(x1));
+            t_next_horizontal = (x0 - Math.floor(x0)) * dt_dx;
+        }
+
+        if (dy == 0)
+        {
+            y_inc = 0;
+            t_next_vertical = dt_dy; // infinity
+        }
+        else if (y1 > y0)
+        {
+            y_inc = 1;
+            n += (int)(Math.floor(y1)) - y;
+            t_next_vertical = (Math.floor(y0) + 1 - y0) * dt_dy;
+        }
+        else
+        {
+            y_inc = -1;
+            n += y - (int)(Math.floor(y1));
+            t_next_vertical = (y0 - Math.floor(y0)) * dt_dy;
+        }
+
+        for (; n > 0; --n)
+        {
+            visitedPoints.add(new int[]{x, y});
+
+            if (t_next_vertical < t_next_horizontal)
+            {
+                y += y_inc;
+                t = t_next_vertical;
+                t_next_vertical += dt_dy;
+            }
+            else
+            {
+                x += x_inc;
+                t = t_next_horizontal;
+                t_next_horizontal += dt_dx;
+            }
+        }
+        return visitedPoints;
     }
 }

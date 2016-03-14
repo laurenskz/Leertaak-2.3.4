@@ -51,6 +51,12 @@ public class OccupancyMap {
 
 	}
 
+	public char getGridPoint(int x, int y){
+		if(y>=grid.length)return EMPTY;
+		if(x>=grid[y].length)return EMPTY;
+		return grid[y][x];
+	}
+
 	public void drawLaserScan(double position[], double measures[]) {
 		double rx = Math.round(position[0] + 20.0 * Math.cos(Math.toRadians(position[2])));
 		double ry = Math.round(position[1] + 20.0 * Math.sin(Math.toRadians(position[2])));
@@ -164,6 +170,10 @@ public class OccupancyMap {
 
 	public char getEmpty() {
 		return EMPTY;
+	}
+
+	public char getRobot() {
+		return ROBOT;
 	}
 
 	public void setEnvironment(Environment environment) {
