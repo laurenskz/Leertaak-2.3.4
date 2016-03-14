@@ -151,7 +151,7 @@ public class MobileRobotAI implements Runnable {
         return new double[][]{leftFront,rightFront,leftBack,rightBack};
     }
 
-    private void rotateTo(double degrees,BufferedReader input,double[] position){
+    private void rotateTo(double degrees, BufferedReader input, double[] position){
         try{
             getPosition(position,input);
             double toMove = degrees - position[2];
