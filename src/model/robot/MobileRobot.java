@@ -39,12 +39,12 @@ public class MobileRobot {
 	private final Platform platform;
 	private final ArrayList<Device> sensors;
 
-    private final MobileRobotAI intelligence;
+    private final JulesMobileRobotAI intelligence;
 
 	private PrintWriter output;
 	private ThreadPoolExecutor executor;
 
-	public MobileRobot(String name, double x, double y, double t, Environment environment,OccupancyMap map) {
+	public MobileRobot(String name, double x, double y, double t, Environment environment, OccupancyMap map) {
 		this.sensors = new ArrayList<Device>();
 		this.name = name;
 		this.position = new Position(x, y, Math.toRadians(t));
@@ -52,7 +52,7 @@ public class MobileRobot {
 		this.sensors.add(new Laser("L1", this, new Position(20.0, 0.0, 0.0), environment));
 		delay = BASE_DELAY;
 
-		this.intelligence = new MobileRobotAI(this,map);
+		this.intelligence = new JulesMobileRobotAI(this, map);
 
 	}
 
