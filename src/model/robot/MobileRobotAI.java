@@ -27,7 +27,7 @@ public class MobileRobotAI implements Runnable {
 
     public static final int MAX_WALL_DISTANCE = 70;
     public static final int MAX_BOX_DIFFERENCE = 8;
-    public static final int MOVE_DISTANCE = 10;
+    public static final int MOVE_DISTANCE = 3;
     private final OccupancyMap map;
     private final MobileRobot robot;
     private double robotX, robotY, robotWidth, robotHeight;
@@ -64,8 +64,8 @@ public class MobileRobotAI implements Runnable {
                 System.out.println("intelligence running");
                 robotX = robot.getPlatform().getShape().getBounds().getX();
                 robotY = robot.getPlatform().getShape().getBounds().getY();
-                robotHeight = robot.getPlatform().getShape().getBounds().height;
-                robotWidth = robot.getPlatform().getShape().getBounds().width;
+                robotHeight = robot.getPlatform().getShape().getBounds().height+7;
+                robotWidth = robot.getPlatform().getShape().getBounds().width+7;
 //                double xStart = 200,yStart = 200, xDest = 400,yDest = 400;
 //                Set<int[]>visited = pointsBetween(xStart,yStart,xDest,yDest,xStart+90,yStart+30,xDest+90,yDest+30);
                 mazeWallFollower(position, measures, input);
@@ -78,18 +78,29 @@ public class MobileRobotAI implements Runnable {
 
     }
 
+    private double distanceBetween(double[] a, double[] b){
+        double dX = Math.abs(b[0]-a[0]),dY=Math.abs(a[1]-b[1]);
+        return Math.sqrt(dX*dX+dY*dY);
+    }
+
 
     private void mazeWallFollower(double[] position, double[] measures, BufferedReader input) throws IOException{
         getPosition(position,input);
+        double[] startPosition = clone(position);
         int degrees = (int)Math.round(position[2]);
         scan(position,measures,input);
         int stepsSinceRight = Integer.MIN_VALUE;
-        while(true){
+        boolean running = true;
+        boolean leftStartArea = false;
+        while(running){
             while(safeMove(position, MOVE_DISTANCE)){
                 getPosition(position,input);
+                if(!leftStartArea)
+                    if(distanceBetween(position,startPosition)>80)leftStartArea=true;
+                if(leftStartArea&&distanceBetween(position,startPosition)<20)running=false;
                 move(input,MOVE_DISTANCE);
                 stepsSinceRight++;
-                if(stepsSinceRight>2&&canGoRight(position,input)){
+                if(stepsSinceRight>10&&canGoRight(position,input)){
                     degrees = (degrees+90)%360;
                     rotateTo(degrees,input,position);
                     getPosition(position, input);
@@ -239,8 +250,6 @@ public class MobileRobotAI implements Runnable {
     private double[][] getRobotBounds(double[] position) {
         double vx = robotWidth + robotY;
         double vy = robotHeight / 2;
-        vx+=5;//Safety!!!!!!
-        vy+=0;
         double degrees = Math.toRadians(360d - position[2]);
         double[] leftFront = new double[2];
         leftFront[0] = position[0] + vx * Math.cos(degrees) - vy * Math.sin(degrees);
