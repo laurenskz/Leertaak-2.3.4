@@ -27,6 +27,7 @@ public class MobileRobotAI implements Runnable {
 
     public static final int MAX_WALL_DISTANCE = 70;
     public static final int MAX_BOX_DIFFERENCE = 8;
+    public static final int MOVE_DISTANCE = 10;
     private final OccupancyMap map;
     private final MobileRobot robot;
     private double robotX, robotY, robotWidth, robotHeight;
@@ -67,7 +68,7 @@ public class MobileRobotAI implements Runnable {
                 robotWidth = robot.getPlatform().getShape().getBounds().width;
 //                double xStart = 200,yStart = 200, xDest = 400,yDest = 400;
 //                Set<int[]>visited = pointsBetween(xStart,yStart,xDest,yDest,xStart+90,yStart+30,xDest+90,yDest+30);
-                loop(position, measures, input);
+                mazeWallFollower(position, measures, input);
                 this.running = false;
             } catch (IOException ioe) {
                 System.err.println("execution stopped");
@@ -77,6 +78,44 @@ public class MobileRobotAI implements Runnable {
 
     }
 
+
+    private void mazeWallFollower(double[] position, double[] measures, BufferedReader input) throws IOException{
+        getPosition(position,input);
+        int degrees = (int)Math.round(position[2]);
+        scan(position,measures,input);
+        int stepsSinceRight = Integer.MIN_VALUE;
+        while(true){
+            while(safeMove(position, MOVE_DISTANCE)){
+                getPosition(position,input);
+                move(input,MOVE_DISTANCE);
+                stepsSinceRight++;
+                if(stepsSinceRight>2&&canGoRight(position,input)){
+                    degrees = (degrees+90)%360;
+                    rotateTo(degrees,input,position);
+                    getPosition(position, input);
+                    stepsSinceRight = 0;
+
+                }
+            }
+            getPosition(position,input);
+            scan(position,measures,input);
+            if(safeMove(position,MOVE_DISTANCE))continue;
+            if(stepsSinceRight>=0&&canGoRight(position,input)){
+                degrees = (degrees+90)%360;
+                stepsSinceRight = 0;
+            } else{
+                if(stepsSinceRight<0)stepsSinceRight=0;
+                degrees = (degrees-90)%360;
+            }
+            rotateTo(degrees,input,position);
+        }
+    }
+
+    private boolean canGoRight(double[] position,BufferedReader input){
+        double[] clonedPosition = clone(position);
+        clonedPosition[2] = position[2]+90;
+        return safeMove(clonedPosition,MOVE_DISTANCE);
+    }
     private void testFollowWallPoint(double[] position, double[] measures, BufferedReader input) throws IOException {
         getPosition(position, input);
         scan(position, measures, input);
@@ -199,8 +238,32 @@ public class MobileRobotAI implements Runnable {
     }
 
     private boolean safeMove(double[] position, int distance) {
-        Set<int[]> pointsOnRoute = pointsBetween(position, distance);
-        pointsOnRoute.addAll(getTurnPoints(position, distance));
+        double[] positionClone = clone(position);
+        positionClone[2] = Math.round(position[2]);
+        Set<int[]> pointsOnRoute = pointsBetween(positionClone, distance);
+//        pointsOnRoute.addAll(getTurnPoints(position, distance));
+        for (int[] ints : pointsOnRoute) {
+            try {
+                if(map.getGrid()[ints[0]][ints[1]]==map.getEmpty())
+                    map.getGrid()[ints[0]][ints[1]] = OccupancyMap.TOFOLLOW;
+            } catch (Exception e) {
+//                e.printStackTrace();
+            }
+        }
+        map.processEvent(new ActionEvent(map,0,""));
+        try {
+            Thread.sleep(0);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        for (int[] ints : pointsOnRoute) {
+            try {
+                if(map.getGrid()[ints[0]][ints[1]]==OccupancyMap.TOFOLLOW)
+                    map.getGrid()[ints[0]][ints[1]] = map.getEmpty();
+            } catch (Exception e) {
+//                e.printStackTrace();
+            }
+        }
         for (int[] ints : pointsOnRoute) {
             if (map.getGridPoint(ints[0], ints[1], map.getObstacle()) != map.getEmpty() && map.getGridPoint(ints[0], ints[1], map.getObstacle()) != map.getRobot()) {
                 return false;
@@ -273,6 +336,8 @@ public class MobileRobotAI implements Runnable {
     private double[][] getRobotBounds(double[] position) {
         double vx = robotWidth + robotY;
         double vy = robotHeight / 2;
+        vx+=5;//Safety!!!!!!
+        vy+=0;
         double degrees = Math.toRadians(360d - position[2]);
         double[] leftFront = new double[2];
         leftFront[0] = position[0] + vx * Math.cos(degrees) - vy * Math.sin(degrees);
@@ -294,6 +359,12 @@ public class MobileRobotAI implements Runnable {
             getPosition(position, input);
             double toMove = degrees - position[2];
             int degreesAsInt = (int) Math.round(toMove);
+            if(degreesAsInt>180){
+                degreesAsInt-=360;
+            }
+            if(degreesAsInt<-180){
+                degreesAsInt+=360;
+            }
             if (degreesAsInt < 0) {
                 rotateLeft(input, -degreesAsInt);
             } else if (degreesAsInt > 0) {
