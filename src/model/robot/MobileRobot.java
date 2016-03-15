@@ -39,7 +39,7 @@ public class MobileRobot {
 	private final Platform platform;
 	private final ArrayList<Device> sensors;
 
-    private final JulesMobileRobotAI intelligence;
+    private final MobileRobotAI intelligence;
 
 	private PrintWriter output;
 	private ThreadPoolExecutor executor;
@@ -52,7 +52,7 @@ public class MobileRobot {
 		this.sensors.add(new Laser("L1", this, new Position(20.0, 0.0, 0.0), environment));
 		delay = BASE_DELAY;
 
-		this.intelligence = new JulesMobileRobotAI(this, map);
+		this.intelligence = new MobileRobotAI(this, map);
 
 	}
 

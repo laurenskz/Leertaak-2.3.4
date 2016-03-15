@@ -91,7 +91,7 @@ public class JulesMobileRobotAI implements Runnable {
 				for (int y = mapY - (size/2); y < mapY + size; y++) {
 					if (x > map.getMapWidth() || y > map.getMapHeight() || x < 0 || y < 0) {
 						continue;
-					} else if (map.getGridPoint(x, y) == map.getObstacle() && !map.isFollowed(x, y)) {
+					} else if (map.getGridPoint(x, y,map.getObstacle()) == map.getObstacle() && !map.isFollowed(x, y)) {
 						return new int[]{x * map.getCellDimension(), y * map.getCellDimension()};
 					}
 				}
