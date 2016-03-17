@@ -27,7 +27,8 @@ public class MobileRobotAI implements Runnable {
 
     public static final int MAX_WALL_DISTANCE = 70;
     public static final int MAX_BOX_DIFFERENCE = 8;
-    public static final int MOVE_DISTANCE = 3;
+    public static final int MOVE_DISTANCE = 1;
+    public static final int MIN_STEPS_SINCE_RIGHT = (int)Math.round(30d/MOVE_DISTANCE);
     private final OccupancyMap map;
     private final MobileRobot robot;
     private double robotX, robotY, robotWidth, robotHeight;
@@ -64,8 +65,8 @@ public class MobileRobotAI implements Runnable {
                 System.out.println("intelligence running");
                 robotX = robot.getPlatform().getShape().getBounds().getX();
                 robotY = robot.getPlatform().getShape().getBounds().getY();
-                robotHeight = robot.getPlatform().getShape().getBounds().height+7;
-                robotWidth = robot.getPlatform().getShape().getBounds().width+7;
+                robotHeight = robot.getPlatform().getShape().getBounds().height;
+                robotWidth = robot.getPlatform().getShape().getBounds().width;
 //                double xStart = 200,yStart = 200, xDest = 400,yDest = 400;
 //                Set<int[]>visited = pointsBetween(xStart,yStart,xDest,yDest,xStart+90,yStart+30,xDest+90,yDest+30);
                 mazeWallFollower(position, measures, input);
@@ -86,6 +87,7 @@ public class MobileRobotAI implements Runnable {
 
     private void mazeWallFollower(double[] position, double[] measures, BufferedReader input) throws IOException{
         getPosition(position,input);
+
         double[] startPosition = clone(position);
         int degrees = (int)Math.round(position[2]);
         scan(position,measures,input);
@@ -93,6 +95,7 @@ public class MobileRobotAI implements Runnable {
         boolean running = true;
         boolean leftStartArea = false;
         while(running){
+
             while(safeMove(position, MOVE_DISTANCE)){
                 getPosition(position,input);
                 if(!leftStartArea)
@@ -100,12 +103,14 @@ public class MobileRobotAI implements Runnable {
                 if(leftStartArea&&distanceBetween(position,startPosition)<20)running=false;
                 move(input,MOVE_DISTANCE);
                 stepsSinceRight++;
-                if(stepsSinceRight>10&&canGoRight(position,input)){
+
+                // If we can go right, we do that
+                if(stepsSinceRight> MIN_STEPS_SINCE_RIGHT &&canGoRight(position,input)){
+                    // Turn 90 degrees to the right
                     degrees = (degrees+90)%360;
                     rotateTo(degrees,input,position);
                     getPosition(position, input);
                     stepsSinceRight = 0;
-
                 }
             }
             getPosition(position,input);
@@ -129,68 +134,15 @@ public class MobileRobotAI implements Runnable {
     }
 
     private double[] clone(double[] ar) {
-        if (ar == null) return null;
-        double[] toRet = new double[ar.length];
-        for (int i = 0; i < ar.length; i++) {
-            toRet[i] = ar[i];
-        }
-        return toRet;
+        return Arrays.copyOf(ar,ar==null?0:ar.length);
     }
 
-
-
-    private int[] calulateAngle(int[] wallPoint, boolean followableX, boolean followableY, double dY, double dX, double[] newPosition, int angle, double degrees) {
-        double sin = Math.sin(degrees), cos = Math.cos(degrees);
-        double distance = 0;
-        if (followableY) {
-            if (Math.abs(cos) < 0.00001) return null;
-            distance = dX / cos;
-        }
-        if (distance > 0) {
-            newPosition[2] = angle;
-            double[] endPoint = translateWithAngleAndDistance(newPosition, (int) distance);
-            if (Math.abs(endPoint[1] - wallPoint[1] * map.getCellDimension()) > MAX_WALL_DISTANCE) return null;
-            if (safeMove(newPosition, (int) distance)) return new int[]{angle, (int) distance};
-        }
-        if (followableX) {
-            if (Math.abs(sin) < 0.00001) return null;
-            distance = dY / sin;
-        }
-        if (distance <= 0) return null;
-        newPosition[2] = angle;
-        double[] endPoint = translateWithAngleAndDistance(newPosition, (int) distance);
-        if (Math.abs(endPoint[0] - wallPoint[0] * map.getCellDimension()) > MAX_WALL_DISTANCE) return null;
-        if (safeMove(newPosition, (int) Math.round(distance))) return new int[]{angle, (int) Math.round(distance)};
-        return null;
-    }
 
     private boolean safeMove(double[] position, int distance) {
         double[] positionClone = clone(position);
         positionClone[2] = Math.round(position[2]);
+        double [] destination = translateWithAngleAndDistance(position,distance);
         Set<int[]> pointsOnRoute = pointsBetween(positionClone, distance);
-//        pointsOnRoute.addAll(getTurnPoints(position, distance));
-        for (int[] ints : pointsOnRoute) {
-            try {
-                if(map.getGrid()[ints[0]][ints[1]]==map.getEmpty())
-                    map.getGrid()[ints[0]][ints[1]] = OccupancyMap.TOFOLLOW;
-            } catch (Exception e) {
-//                e.printStackTrace();
-            }
-        }
-        map.processEvent(new ActionEvent(map,0,""));
-        try {
-            Thread.sleep(0);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        for (int[] ints : pointsOnRoute) {
-            try {
-                if(map.getGrid()[ints[0]][ints[1]]==OccupancyMap.TOFOLLOW)
-                    map.getGrid()[ints[0]][ints[1]] = map.getEmpty();
-            } catch (Exception e) {
-//                e.printStackTrace();
-            }
-        }
         for (int[] ints : pointsOnRoute) {
             if (map.getGridPoint(ints[0], ints[1], map.getObstacle()) != map.getEmpty() && map.getGridPoint(ints[0], ints[1], map.getObstacle()) != map.getRobot()) {
                 return false;
@@ -223,20 +175,19 @@ public class MobileRobotAI implements Runnable {
         visitedPoints.addAll(raytrace(x00, y00, x10, y10, map));
         visitedPoints.addAll(raytrace(x01, y01, x11, y11, map));
         visitedPoints.addAll(raytrace(x10, y10, x11, y11, map));
-        int ySize = map.getMapHeight() / map.getCellDimension();
-        int[][] xValues = new int[ySize][2];
-        for (int[] xValue : xValues) {
-            for (int i = 0; i < xValue.length; i++) {
-                xValue[i] = -1;
-            }
-        }
-        for (int[] point : visitedPoints) {
-            if (point[1] < 0 || point[1] >= xValues.length) continue;
-            if (point[0] == -1) continue;
-            if (xValues[point[1]][0] == -1) xValues[point[1]][0] = point[0];
-            if (xValues[point[1]][0] > point[0]) xValues[point[1]][0] = point[0];
-            if (xValues[point[1]][1] < point[0]) xValues[point[1]][1] = point[0];
-        }
+        addPointsBetweenBounds(visitedPoints);
+        return visitedPoints;
+    }
+
+    private void addPointsBetweenBounds(Set<int[]> visitedPoints) {
+        int ySize = map.getMapHeight() / map.getCellDimension();//Make an array for all y's
+        int[][] xValues = new int[ySize][2];//Every y should have two x's between which all blocks should be added
+        initializeArray(xValues);
+        setXminAndMax(visitedPoints, xValues);
+        addVisitedPoints(visitedPoints, xValues);
+    }
+
+    private void addVisitedPoints(Set<int[]> visitedPoints, int[][] xValues) {
         for (int i = 0; i < xValues.length; i++) {
             int[] xMinAndMax = xValues[i];
             if (xMinAndMax[0] < 0 || xMinAndMax[1] < 0) continue;
@@ -244,79 +195,97 @@ public class MobileRobotAI implements Runnable {
                 visitedPoints.add(new int[]{j, i});
             }
         }
-        return visitedPoints;
+    }
+
+    private void setXminAndMax(Set<int[]> visitedPoints, int[][] xValues) {
+        for (int[] point : visitedPoints) {
+            if (point[1] < 0 || point[1] >= xValues.length) continue;
+            if (point[0] == -1) continue;
+            if (xValues[point[1]][0] == -1) xValues[point[1]][0] = point[0];
+            if (xValues[point[1]][0] > point[0]) xValues[point[1]][0] = point[0];
+            if (xValues[point[1]][1] < point[0]) xValues[point[1]][1] = point[0];
+        }
+    }
+
+    private void initializeArray(int[][] xValues) {
+        for (int[] xValue : xValues) {//In
+            for (int i = 0; i < xValue.length; i++) {
+                xValue[i] = -1;
+            }
+        }
     }
 
     private double[][] getRobotBounds(double[] position) {
         double vx = robotWidth + robotY;
         double vy = robotHeight / 2;
+
         double degrees = Math.toRadians(360d - position[2]);
-        double[] leftFront = new double[2];
-        leftFront[0] = position[0] + vx * Math.cos(degrees) - vy * Math.sin(degrees);
-        leftFront[1] = position[1] - vx * Math.sin(degrees) - vy * Math.cos(degrees);
-        double[] rightFront = new double[2];
-        rightFront[0] = leftFront[0] + (2 * vy) * Math.sin(degrees);
-        rightFront[1] = leftFront[1] + (2 * vy) * Math.cos(degrees);
-        double[] leftBack = new double[2];
-        leftBack[0] = leftFront[0] - robotWidth * Math.cos(degrees);
-        leftBack[1] = leftFront[1] + robotWidth * Math.sin(degrees);
+
+        double[] leftFront = getLeftFront(position, vx, vy, degrees);
+        double[] rightFront = getRightFront(vy, degrees, leftFront);
+        double[] leftBack = getLeftBack(degrees, leftFront);
+        double[] rightBack = getRightBack(vy, degrees, leftBack);
+
+        return new double[][]{leftFront, rightFront, leftBack, rightBack};
+    }
+
+    private double[] getRightBack(double vy, double degrees, double[] leftBack) {
         double[] rightBack = new double[2];
         rightBack[0] = leftBack[0] + (2 * vy) * Math.sin(degrees);
         rightBack[1] = leftBack[1] + (2 * vy) * Math.cos(degrees);
-        return new double[][]{leftFront, rightFront, leftBack, rightBack};
+        return rightBack;
+    }
+
+    private double[] getLeftBack(double degrees, double[] leftFront) {
+        double[] leftBack = new double[2];
+        leftBack[0] = leftFront[0] - robotWidth * Math.cos(degrees);
+        leftBack[1] = leftFront[1] + robotWidth * Math.sin(degrees);
+        return leftBack;
+    }
+
+    private double[] getRightFront(double vy, double degrees, double[] leftFront) {
+        double[] rightFront = new double[2];
+        rightFront[0] = leftFront[0] + (2 * vy) * Math.sin(degrees);
+        rightFront[1] = leftFront[1] + (2 * vy) * Math.cos(degrees);
+        return rightFront;
+    }
+
+    private double[] getLeftFront(double[] position, double vx, double vy, double degrees) {
+        double[] leftFront = new double[2];
+        leftFront[0] = position[0] + vx * Math.cos(degrees) - vy * Math.sin(degrees);
+        leftFront[1] = position[1] - vx * Math.sin(degrees) - vy * Math.cos(degrees);
+        return leftFront;
     }
 
     private void rotateTo(double degrees, BufferedReader input, double[] position) {
         try {
             getPosition(position, input);
             double toMove = degrees - position[2];
-            int degreesAsInt = (int) Math.round(toMove);
-            if(degreesAsInt>180){
-                degreesAsInt-=360;
-            }
-            if(degreesAsInt<-180){
-                degreesAsInt+=360;
-            }
-            if (degreesAsInt < 0) {
-                rotateLeft(input, -degreesAsInt);
-            } else if (degreesAsInt > 0) {
-                rotateRight(input, degreesAsInt);
-            }
+            int degreesAsInt = getDegreesAsInt(toMove);
+            rotate(input, degreesAsInt);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void moveTo(double[] position, double[] currentPosition, BufferedReader input) {
-        try {
-            getPosition(currentPosition, input);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void rotate(BufferedReader input, int degreesAsInt) throws IOException {
+        if (degreesAsInt < 0) {
+            rotateLeft(input, -degreesAsInt);
+        } else if (degreesAsInt > 0) {
+            rotateRight(input, degreesAsInt);
         }
-        double dX = position[0] - currentPosition[0];//Aanliggende zijde
-        double dY = position[1] - currentPosition[1];//Overstaande zijde
-        double degrees = getDegrees(dX, dY);
-        moveRobot(currentPosition, input, dX, dY, degrees);
     }
 
-    private void moveRobot(double[] currentPosition, BufferedReader input, double dX, double dY, double degrees) {
-        rotateTo(degrees, input, currentPosition);
-        int distance = (int) Math.sqrt(dX * dX + dY * dY);
-        move(input, distance);
+    private int getDegreesAsInt(double toMove) {
+        int degreesAsInt = (int) Math.round(toMove);
+        if(degreesAsInt>180){
+            degreesAsInt-=360;
+        }
+        if(degreesAsInt<-180){
+            degreesAsInt+=360;
+        }
+        return degreesAsInt;
     }
-
-    private static double getDegrees(double dX, double dY) {
-        double tan = dY / dX;
-        double radians = Math.atan(tan);
-        double degrees = Math.toDegrees(radians);
-        if (dX < 0)
-            degrees += 180d;
-        else if (dY < 0)
-            degrees += 360d;
-        return degrees;
-    }
-
-
 
 
     private void rotateLeft(BufferedReader input, int degrees) throws IOException {
