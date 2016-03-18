@@ -25,14 +25,11 @@ import java.util.*;
 
 public class MobileRobotAI implements Runnable {
 
-    public static final int MAX_WALL_DISTANCE = 70;
-    public static final int MAX_BOX_DIFFERENCE = 8;
     public static final int MOVE_DISTANCE = 1;
-    public static final int MIN_STEPS_SINCE_RIGHT = (int)Math.round(30d/MOVE_DISTANCE);
+    public static final int MIN_STEPS_SINCE_RIGHT = 27;
     private final OccupancyMap map;
     private final MobileRobot robot;
     private double robotX, robotY, robotWidth, robotHeight;
-    private int[] lastFollowedWallBlock;
 
     private boolean running;
 
@@ -100,17 +97,20 @@ public class MobileRobotAI implements Runnable {
                 getPosition(position,input);
                 if(!leftStartArea)
                     if(distanceBetween(position,startPosition)>80)leftStartArea=true;
-                if(leftStartArea&&distanceBetween(position,startPosition)<20)running=false;
+                if(leftStartArea&&distanceBetween(position,startPosition)<30)running=false;
                 move(input,MOVE_DISTANCE);
                 stepsSinceRight++;
-
+                getPosition(position,input);
                 // If we can go right, we do that
                 if(stepsSinceRight> MIN_STEPS_SINCE_RIGHT &&canGoRight(position,input)){
                     // Turn 90 degrees to the right
-                    degrees = (degrees+90)%360;
-                    rotateTo(degrees,input,position);
-                    getPosition(position, input);
-                    stepsSinceRight = 0;
+                    scan(position,measures,input);
+                    if(canGoRight(position,input)){
+                        degrees = (degrees+90)%360;
+                        rotateTo(degrees,input,position);
+                        getPosition(position, input);
+                        stepsSinceRight = 0;
+                    }
                 }
             }
             getPosition(position,input);
@@ -322,10 +322,21 @@ public class MobileRobotAI implements Runnable {
 
     private void scan(double[] position, double[] measures, BufferedReader input) throws IOException {
         String result;
+//        robot.sendCommand("S1.SCAN");
+//        result = input.readLine();
+//        parseMeasures(result, measures);
         robot.sendCommand("L1.SCAN");
         result = input.readLine();
+        double[] secondMeasures = new double[measures.length];
         parseMeasures(result, measures);
+//        merge(measures,secondMeasures);
         map.drawLaserScan(position, measures);
+    }
+
+    private void merge(double[] a , double[] b){
+        for (int i = 0; i < a.length; i++) {
+            if(b[i]<a[i])a[i] = b[i];
+        }
     }
 
     private void getPosition(double[] position, BufferedReader input) throws IOException {
