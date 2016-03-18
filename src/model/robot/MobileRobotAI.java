@@ -322,14 +322,14 @@ public class MobileRobotAI implements Runnable {
 
     private void scan(double[] position, double[] measures, BufferedReader input) throws IOException {
         String result;
-//        robot.sendCommand("S1.SCAN");
-//        result = input.readLine();
-//        parseMeasures(result, measures);
+        robot.sendCommand("S1.SCAN");
+        result = input.readLine();
+        parseMeasures(result, measures);
         robot.sendCommand("L1.SCAN");
         result = input.readLine();
         double[] secondMeasures = new double[measures.length];
-        parseMeasures(result, measures);
-//        merge(measures,secondMeasures);
+        parseMeasures(result, secondMeasures);
+        merge(measures,secondMeasures);
         map.drawLaserScan(position, measures);
     }
 
